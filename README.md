@@ -27,26 +27,26 @@ pip3 install -r requrements.txt
 ```
 python3 crtsh_fetcher.py -d <domain-name> -s <path-for-saving-the-certs>
 ```
-For example, if I'd like to retrieve certificates of domain **snote.online** and stored it to my current directory **./**, just simply type
+For example, if I'd like to retrieve certificates of domain **[www.google.com](www.google.com)** and stored it to my current directory **./**, just simply type
 ```
-python3 crtsh_fetcher.py -d snote.online -s .
+python3 crtsh_fetcher.py -d www.google.com -s .
 ```
 or if you don't want to save the certs locally, just ignore the -s parameter
 ```
-python3 crtsh_fetcher.py -d snote.online
+python3 crtsh_fetcher.py -d www.google.com
 ```
 
 ## Facebook_fetcher.py
 ```
 python3 Facebook_fetcher.py -d <domain-name> -s <path-for-saving-the-certs>
 ```
-For example, if I'd like to retrieve certificates of domain **snote.online** and stored it to my current directory **./**, just simply type
+For example, if I'd like to retrieve certificates of domain **[www.google.com](www.google.com)** and stored it to my current directory **./**, just simply type
 ```
-python3 Facebook_fetcher.py -d snote.online -s .
+python3 Facebook_fetcher.py -d www.google.com -s .
 ```
 or if you don't want to save the certs locally, just ignore the -s parameter
 ```
-python3 Facebook_fetcher.py -d snote.online
+python3 Facebook_fetcher.py -d www.google.com
 ```
 
 ## TODO
