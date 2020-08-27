@@ -9,6 +9,11 @@ Fetch certificates from [crt.sh](https://crt.sh/) and [Facebook Certificate Tran
 - [dateutil](https://pypi.org/project/python-dateutil/)
 
 # Usage
+First clone this repo
+```
+git clone https://github.com/LinkWoong/Cert_Fetcher.git
+cd ./Cert_Fetcher
+```
 Before running any script, please install requirement.txt first by using
 ```
 pip install -r requirements.txt
