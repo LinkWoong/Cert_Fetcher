@@ -1,5 +1,5 @@
 # Cert_Fetcher
-Fetch certificates from [crt.sh](https://crt.sh/) and [Facebook Certificate Transparency](https://developers.facebook.com/tools/ct/)
+Fetch certificates from [crt.sh](https://crt.sh/) and [Facebook Certificate Transparency](https://developers.facebook.com/tools/ct/) by using public APIs
 
 # dependency
 - Python 3.x
@@ -51,4 +51,6 @@ python3 Facebook_fetcher.py -d www.google.com
 
 ## TODO
 - Multithread
-- Header Pool to avoid being locked
+- Header Pool to avoid being locked down
+- Google CT Monitor, Censys, SSL Mate
+- Process domains in batches (like reading from .csv file)
