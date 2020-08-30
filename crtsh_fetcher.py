@@ -25,7 +25,7 @@ class crtsh_fetcher(object):
             "not_before": "2018-02-08T15:47:39"
         }
         """
-        print("Downloading certificates from " + domain)
+        # print("Downloading certificates from " + domain)
         api_url = "https://crt.sh/?q={}&output=json"
         if not exprired:
             api_url =  api_url + "&exclude=expried"
@@ -191,6 +191,7 @@ def main():
     
     try:
         if args.domain:
+            # print("Downloading certificates from " + args.domain)
             certs = cralwer.retrieve_cert(args.domain, True, True)
             
             print("Before dedup contains %d" % len(certs))

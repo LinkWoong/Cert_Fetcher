@@ -9,6 +9,11 @@ from bs4 import BeautifulSoup
 from dateutil.parser import parse
 
 class Facebook_fetcher(object):
+    def __init__(self, domain, wildcard=True, expried=True):
+        self.domain = domain
+        self.wildcard = wildcard
+        self.expried = expried
+
     def retrieve_cert(self, domain, wildcard=True, exprired=True) -> {}:
         """ Return example
         {
@@ -33,7 +38,7 @@ class Facebook_fetcher(object):
             ]
         }
         """
-        print("Downloading certificates from " + domain)
+        # print("Downloading certificates from " + domain)
         api_url = "https://graph.facebook.com/certificates?query={}&fields=cert_hash_sha256,domains,issuer_name,certificate_pem&limit=10000&access_token=727706161384748|IfGdH0dhYXQJNh-F-Oz5lKqesq0".format(domain)
         url = api_url.format(domain)
         
@@ -77,13 +82,14 @@ def main():
     parser.add_argument('-s', dest='save', action='store', help='destination directory for saving the certificates')
     
     args = parser.parse_args()
-    cralwer = Facebook_fetcher()
+    cralwer = Facebook_fetcher(args.domain, True, True)
     certs = []
     certs_detail = {}
     unique_id = set()
     
     try:
         if args.domain:
+            print("Downloading certificates from " + args.domain)
             certs = cralwer.retrieve_cert(args.domain, True, True)
             print("Before dedup contains %d" % len(certs["data"]))
             certs_detail = cralwer.dedup(certs)
