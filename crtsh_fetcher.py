@@ -9,6 +9,11 @@ from bs4 import BeautifulSoup
 from dateutil.parser import parse
 
 class crtsh_fetcher(object):
+    def __init__(self, domain, wildcard, expried):
+        self.domain = domain
+        self.wildcard = wildcard
+        self.expried = expried
+        
     def retrieve_cert(self, domain, wildcard=True, exprired=True) -> {}:
         """ Return example
         {
@@ -56,10 +61,10 @@ class crtsh_fetcher(object):
     
     def get_cert_detail(self, id, type="sha1") -> {}:
         http_request = requests.get(url="https://crt.sh/", params={'id': id})
+        cert = {}
         try:
             beautifulSoup = BeautifulSoup(http_request.text, 'lxml')
             table = beautifulSoup.find_all('table')[1]
-            cert = {}
             content = table.find_all('tr', recursive=False)
             
             if len(content) < 6:
@@ -180,7 +185,7 @@ def main():
     parser.add_argument('-s', dest='save', action='store', help='destination directory for saving the certificates')
     
     args = parser.parse_args()
-    cralwer = crtsh_fetcher()
+    cralwer = crtsh_fetcher(args.domain, True, True)
     certs = []
     certs_detail = {}
     
@@ -200,14 +205,10 @@ def main():
                 print("Current result is empty")
             elif not os.path.exists(args.save):
                 os.mkdir(args.save)
-                with open(args.save + "/crtsh_cert.json", "w", encoding="utf-8") as f:
-                    json.dump(certs, f, ensure_ascii=False, indent=4)
-                with open(os.path.join(args.save, "/crtsh_certs_detail.json"), "w", encoding="utf-8") as f:
+                with open(os.path.join(args.save, "/crtsh_certs.json"), "w", encoding="utf-8") as f:
                     json.dump(certs_detail, f, ensure_ascii=False, indent=4)
             else:
-                with open(args.save + "/crtsh_cert.json", "w", encoding="utf-8") as f:
-                    json.dump(certs, f, ensure_ascii=False, indent=4)
-                with open(args.save + "/crtsh_certs_detail.json", "w", encoding="utf-8") as f:
+                with open(args.save + "/crtsh_certs.json", "w", encoding="utf-8") as f:
                     json.dump(certs_detail, f, ensure_ascii=False, indent=4, default=datetime_handler)
     except ValueError:
         print("Argument value error!")
