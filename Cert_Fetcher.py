@@ -27,7 +27,7 @@ def main():
     lock = threading.Lock()
     
     crtsh_certs = []
-    crtsh_sha256 = set()
+    crtsh_sha256 = {}
     crtsh_cert_details = {}
     
     facebook_certs = []
@@ -41,7 +41,7 @@ def main():
             crtsh_unique_cert_id = crtsh_client.dedup(crtsh_certs)
             print("After dedup crt.sh contains %d" % len(crtsh_unique_cert_id))
             count = 1
-            """ 
+            """ Multithreading, didn't work. GET still takes 2+ seconds, website still throttling
             with ThreadPoolExecutor(max_workers=3) as executor:
                 futures = []
                 for id in crtsh_unique_cert_id:
@@ -56,13 +56,32 @@ def main():
                         print("Connection time out") 
             """
             
+            # persist each certificate to the directory specified by args.save
+            
             for id in crtsh_unique_cert_id:
                 print("Processing %d / %d" % (count, len(crtsh_unique_cert_id)))
                 count += 1
-                crtsh_cert_details[id] = crtsh_client.get_cert_detail(id)
-            print("crt.sh retrival successful")
-            for _, value in crtsh_cert_details.items():
-                crtsh_sha256.add(str.lower(value["sha256"]))
+                current = crtsh_client.get_cert_detail(id)
+                crtsh_cert_details[id] = current
+                if args.save:
+                    if os.path.exists("./crtsh_certs.json"):
+                        with open("./crtsh_certs.json") as f:
+                            data = json.load(f)
+                            
+                        data.update({id: current})
+                        
+                        with open("./crtsh_certs.json", "w", encoding="utf-8") as f:
+                            json.dump(data, f, ensure_ascii=False, indent=4, default=datetime_handler)
+                    else:
+                        with open("./crtsh_certs.json", "w", encoding="utf-8") as f:
+                            json.dump(crtsh_cert_details, f, ensure_ascii=False, indent=4, default=datetime_handler)
+            
+            
+                
+            print("crt.sh retrival successful\n")
+            for key, value in crtsh_cert_details.items():
+                crtsh_sha256[key] = str.lower(value["sha256"])
+                # crtsh_sha256.add(str.lower(value["sha256"]))
             
             print("########### Facebook Monitor #############")
             facebook_certs = facebook_client.retrieve_cert(args.domain, True, True)
@@ -74,7 +93,7 @@ def main():
             for item in facebook_cert_details:
                 facebook_sha256.add(str.lower(item["cert_hash_sha256"]))
                 
-            missing_certs = crtsh_sha256.difference(facebook_sha256)
+            missing_certs = set(crtsh_sha256.values()).difference(facebook_sha256)
             if len(missing_certs) == 0:
                 print("crt.sh returned the same with Facebook")
             else:
