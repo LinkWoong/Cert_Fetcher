@@ -38,7 +38,7 @@ class Facebook_fetcher(object):
             ]
         }
         """
-        print("Downloading certificates from " + domain)
+        # print("Downloading certificates from " + domain)
         api_url = "https://graph.facebook.com/certificates?query={}&fields=cert_hash_sha256,domains,issuer_name,certificate_pem&limit=10000&access_token=727706161384748|IfGdH0dhYXQJNh-F-Oz5lKqesq0".format(domain)
         url = api_url.format(domain)
         
@@ -89,6 +89,7 @@ def main():
     
     try:
         if args.domain:
+            print("Downloading certificates from " + args.domain)
             certs = cralwer.retrieve_cert(args.domain, True, True)
             print("Before dedup contains %d" % len(certs["data"]))
             certs_detail = cralwer.dedup(certs)
