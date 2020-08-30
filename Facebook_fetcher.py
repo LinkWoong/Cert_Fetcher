@@ -9,6 +9,11 @@ from bs4 import BeautifulSoup
 from dateutil.parser import parse
 
 class Facebook_fetcher(object):
+    def __init__(self, domain, wildcard=True, expried=True):
+        self.domain = domain
+        self.wildcard = wildcard
+        self.expried = expried
+
     def retrieve_cert(self, domain, wildcard=True, exprired=True) -> {}:
         """ Return example
         {
@@ -77,7 +82,7 @@ def main():
     parser.add_argument('-s', dest='save', action='store', help='destination directory for saving the certificates')
     
     args = parser.parse_args()
-    cralwer = Facebook_fetcher()
+    cralwer = Facebook_fetcher(args.domain, True, True)
     certs = []
     certs_detail = {}
     unique_id = set()
