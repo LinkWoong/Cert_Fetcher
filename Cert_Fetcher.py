@@ -19,26 +19,34 @@ def main():
     
     args = parser.parse_args()
     crtsh_client = crtsh_fetcher(args.domain, True, True)
-    # facebook_client = Facebook_fetcher()
+    facebook_client = Facebook_fetcher(args.domain, True, True)
     
     crtsh_certs = []
     crtsh_sha256 = []
     crtsh_cert_details = {}
     
+    facebook_certs = []
+    facebook_sha256 = []
+    facebook_cert_details = {}
+    
     try:
         if args.domain:
             crtsh_certs = crtsh_client.retrieve_cert(args.domain, True, True)
             print("########### crt.sh #############")
-            print("Before dedup contains %d" % len(crtsh_certs))
             crtsh_unique_cert_id = crtsh_client.dedup(crtsh_certs)
-            print("After dedup contains %d" % len(crtsh_unique_cert_id))
+            print("After dedup crt.sh contains %d" % len(crtsh_unique_cert_id))
             
             for id in crtsh_unique_cert_id:
                 crtsh_cert_details[id] = crtsh_client.get_cert_detail(id)
                 crtsh_sha256.append(crtsh_cert_details[id]["sha256"])
             
+            print("########### Facebook Monitor #############")
+            facebook_certs = facebook_client.retrieve_cert(args.domain, True, True)
+            facebook_cert_details = facebook_client.dedup(facebook_certs)
+            print("After dedup Facebook Monitor contains %d" % len(facebook_cert_details))
             
-                
+            # cert_hash_sha256
+            
         if args.save:
             if crtsh_certs is None or len(crtsh_cert_details) == 0:
                 print("Current result is empty")
