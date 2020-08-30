@@ -4,10 +4,13 @@ import argparse
 import os
 import lxml
 import datetime
+import threading
 
 from crtsh_fetcher import crtsh_fetcher
 from crtsh_fetcher import datetime_handler
 from Facebook_fetcher import Facebook_fetcher
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
@@ -21,12 +24,14 @@ def main():
     crtsh_client = crtsh_fetcher(args.domain, True, True)
     facebook_client = Facebook_fetcher(args.domain, True, True)
     
+    lock = threading.Lock()
+    
     crtsh_certs = []
-    crtsh_sha256 = []
+    crtsh_sha256 = set()
     crtsh_cert_details = {}
     
     facebook_certs = []
-    facebook_sha256 = []
+    facebook_sha256 = set()
     facebook_cert_details = {}
     
     try:
@@ -35,10 +40,29 @@ def main():
             print("########### crt.sh #############")
             crtsh_unique_cert_id = crtsh_client.dedup(crtsh_certs)
             print("After dedup crt.sh contains %d" % len(crtsh_unique_cert_id))
+            count = 1
+            """ 
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = []
+                for id in crtsh_unique_cert_id:
+                    print("Processing %d / %d" % (count, len(crtsh_unique_cert_id)))
+                    # print("Retrieving %d " % id)
+                    futures.append(executor.submit(crtsh_client.get_cert_detail, id))
+                    # crtsh_cert_details[id] = executor.submit(crtsh_client.get_cert_detail, id)
+                for future in as_completed(futures):
+                    try:
+                        crtsh_cert_details[id] = future.result()
+                    except requests.ConnectTimeout:
+                        print("Connection time out") 
+            """
             
             for id in crtsh_unique_cert_id:
+                print("Processing %d / %d" % (count, len(crtsh_unique_cert_id)))
+                count += 1
                 crtsh_cert_details[id] = crtsh_client.get_cert_detail(id)
-                crtsh_sha256.append(crtsh_cert_details[id]["sha256"])
+            print("crt.sh retrival successful")
+            for _, value in crtsh_cert_details.items():
+                crtsh_sha256.add(str.lower(value["sha256"]))
             
             print("########### Facebook Monitor #############")
             facebook_certs = facebook_client.retrieve_cert(args.domain, True, True)
@@ -47,6 +71,17 @@ def main():
             
             # cert_hash_sha256
             
+            for item in facebook_cert_details:
+                facebook_sha256.add(str.lower(item["cert_hash_sha256"]))
+                
+            missing_certs = crtsh_sha256.difference(facebook_sha256)
+            if len(missing_certs) == 0:
+                print("crt.sh returned the same with Facebook")
+            else:
+                print("Difference is %d " % len(missing_certs))
+                for i in missing_certs:
+                    print(i)
+            
         if args.save:
             if crtsh_certs is None or len(crtsh_cert_details) == 0:
                 print("Current result is empty")
@@ -54,9 +89,13 @@ def main():
                 os.mkdir(args.save)
                 with open(os.path.join(args.save, "/crtsh_certs.json"), "w", encoding="utf-8") as f:
                     json.dump(crtsh_cert_details, f, ensure_ascii=False, indent=4)
+                with open(os.path.join(args.save, "/facebook_certs.json"), "w", encoding="utf-8") as f:
+                    json.dump(facebook_cert_details, f, ensure_ascii=False, indent=4)
             else:
                 with open(args.save + "/crtsh_certs.json", "w", encoding="utf-8") as f:
                     json.dump(crtsh_cert_details, f, ensure_ascii=False, indent=4, default=datetime_handler)
+                with open(os.path.join(args.save, "/facebook_certs.json"), "w", encoding="utf-8") as f:
+                    json.dump(facebook_cert_details, f, ensure_ascii=False, indent=4)
     except ValueError:
         print("Argument value error!")
 
