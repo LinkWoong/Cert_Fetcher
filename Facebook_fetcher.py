@@ -95,6 +95,9 @@ def main():
             certs_detail = cralwer.dedup(certs)
             print("After dedup contains %d" % len(certs_detail))
             
+            for item in certs_detail:
+                print(item["cert_hash_sha256"])
+            
         if args.save:
             if certs is None or len(certs_detail) == 0:
                 print("Current result is empty")
