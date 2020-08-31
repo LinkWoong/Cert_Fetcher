@@ -164,7 +164,7 @@ def main():
             missing_certs = {}
             
             with open("./missing_certs.json") as f:
-                data = json.load(f)
+                missing_certs = json.load(f)
             
         """ 
         if args.save:
