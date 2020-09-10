@@ -14,6 +14,7 @@ from concurrent.futures import as_completed
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
+from datetime import datetime, timedelta
 
 def main():
     parser = argparse.ArgumentParser(description="Arg parser for running this crawler")
@@ -79,21 +80,21 @@ def main():
                     else:
                         with open("./crtsh_certs.json", "w", encoding="utf-8") as f:
                             json.dump(crtsh_cert_details, f, ensure_ascii=False, indent=4, default=datetime_handler)
-                # if count == 5:
-                    # break
             
             print("crt.sh retrival successful\n")
             
             for key, value in crtsh_cert_details.items():
-                if "sha256" in value:
-                    # print("SHA256")
-                    crtsh_sha256[str.lower(value["sha256"])] = key
-                # <sha256, id>
+                if "serial" in value:
+                    dec = int(str.lower(value["serial"]), 16)
+                    # print(dec)
+                    crtsh_sha256[str(dec)] = key
+                # <serial_number, id>
                 
             # crtsh_sha256.pop(str.lower("1A2410FD48E5A962C901746510F1FB070FE48880FC9C2708A22DBE2BEBBA20A3"))
             # crtsh_sha256.pop(str.lower("449D1A6E0AF9057A65BD8FABA37D6839200E47A178EBDF417E88490D1310F49B"))
             # cert_hash_sha256
             # Facebook CT Monitor
+            # 4330916540431064576059971629976076820
             
             print("########### Facebook Monitor #############")
             facebook_certs = facebook_client.retrieve_cert(args.domain, True, True)
@@ -102,8 +103,17 @@ def main():
             
             for item in facebook_cert_details_list:
                 current_id = item["id"]
-                facebook_sha256[str.lower(item["cert_hash_sha256"])] = current_id
-                facebook_cert_details[current_id] = item
+                if "0x" in item["serial_number"] :
+                    dec = int(str.lower(item["serial_number"]), 16)
+                    # print(dec)
+                    
+                    facebook_sha256[str(dec)] = current_id
+                    facebook_cert_details[current_id] = item
+                else:
+                    dec = str.lower(item["serial_number"])
+                    # print(dec)
+                    facebook_sha256[dec] = current_id
+                    facebook_cert_details[current_id] = item
                 
             # facebook_sha256.pop(str.lower("1A2410FD48E5A962C901746510F1FB070FE48880FC9C2708A22DBE2BEBBA20A3"))
             # facebook_sha256.pop(str.lower("449D1A6E0AF9057A65BD8FABA37D6839200E47A178EBDF417E88490D1310F49B"))
@@ -112,8 +122,22 @@ def main():
                 # facebook_sha256[str.lower(value["cert_hash_sha256"])] = key
                 
             # missing_certs = set(crtsh_sha256.values()).difference(facebook_sha256)
+            
+            now = datetime.now()
+            
             missing_certs = set()
             for item in crtsh_sha256.keys():
+                content = crtsh_cert_details[crtsh_sha256[item]]
+                if "not_before" not in content or "not_after" not in content:
+                    continue
+                
+                not_before = datetime.strptime(str(content["not_before"])[:10], "%Y-%m-%d")
+                not_after = datetime.strptime(str(content["not_after"])[:10], "%Y-%m-%d")
+                
+                if now < not_before or now > not_after:
+                    print("Skipping invalid certificates")
+                    continue
+                
                 if item not in facebook_sha256.keys():
                     missing_certs.add(item)
             for item in facebook_sha256.keys():
@@ -155,33 +179,20 @@ def main():
                             else:
                                 content[cert_id] = facebook_cert_details[cert_id]
                             json.dump(content, f, ensure_ascii=False, indent=4, default=datetime_handler)
-        else:
-            print("Start validating")
-            if not os.path.exists("./missing_certs.json"):
-                print("missing_certs.json not found")
-                return
-                
-            missing_certs = {}
             
-            with open("./missing_certs.json") as f:
-                missing_certs = json.load(f)
-            
-        """ 
+        """
         if args.save:
             if crtsh_certs is None or len(crtsh_cert_details) == 0:
                 print("Current result is empty")
             elif not os.path.exists(args.save):
                 os.mkdir(args.save)
-                with open(os.path.join(args.save, "/crtsh_certs.json"), "w", encoding="utf-8") as f:
-                    json.dump(crtsh_cert_details, f, ensure_ascii=False, indent=4)
                 with open(os.path.join(args.save, "/facebook_certs.json"), "w", encoding="utf-8") as f:
                     json.dump(facebook_cert_details, f, ensure_ascii=False, indent=4)
             else:
-                with open(args.save + "/crtsh_certs.json", "w", encoding="utf-8") as f:
-                    json.dump(crtsh_cert_details, f, ensure_ascii=False, indent=4, default=datetime_handler)
-                with open(os.path.join(args.save, "/facebook_certs.json"), "w", encoding="utf-8") as f:
-                    json.dump(facebook_cert_details, f, ensure_ascii=False, indent=4) 
+                with open("./facebook_certs.json", "w", encoding="utf-8") as f:
+                    json.dump(facebook_cert_details, f, ensure_ascii=False, indent=4)
         """
+        
         
     except ValueError:
         print("Argument value error!")
