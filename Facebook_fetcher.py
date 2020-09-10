@@ -7,6 +7,7 @@ import datetime
 
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
+from datetime import datetime, timedelta
 
 class Facebook_fetcher(object):
     def __init__(self, domain, wildcard=True, expried=True):
@@ -39,7 +40,7 @@ class Facebook_fetcher(object):
         }
         """
         # print("Downloading certificates from " + domain)
-        api_url = "https://graph.facebook.com/certificates?query={}&fields=cert_hash_sha256,domains,issuer_name,certificate_pem&limit=10000&access_token=727706161384748|IfGdH0dhYXQJNh-F-Oz5lKqesq0".format(domain)
+        api_url = "https://graph.facebook.com/certificates?query={}&fields=cert_hash_sha256,domains,issuer_name,serial_number,certificate_pem&limit=10000&access_token=727706161384748|IfGdH0dhYXQJNh-F-Oz5lKqesq0".format(domain)
         url = api_url.format(domain)
         
         crawler_header = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'
@@ -85,18 +86,53 @@ def main():
     cralwer = Facebook_fetcher(args.domain, True, True)
     certs = []
     certs_detail = {}
-    unique_id = set()
+    
+    facebook_sha256 = {}
+    facebook_cert_details = {}
     
     try:
         if args.domain:
             print("Downloading certificates from " + args.domain)
             certs = cralwer.retrieve_cert(args.domain, True, True)
             print("Before dedup contains %d" % len(certs["data"]))
-            certs_detail = cralwer.dedup(certs)
-            print("After dedup contains %d" % len(certs_detail))
+            certs_detail_list = cralwer.dedup(certs)
+            print("After dedup contains %d" % len(certs_detail_list))
             
-            for item in certs_detail:
-                print(item["cert_hash_sha256"])
+            for item in certs_detail_list:
+                current_id = item["id"]
+                if "0x" in item["serial_number"] :
+                    dec = int(str.lower(item["serial_number"]), 16)
+                    # print(dec)
+                    
+                    facebook_sha256[str(dec)] = current_id
+                    facebook_cert_details[current_id] = item
+                else:
+                    dec = str.lower(item["serial_number"])
+                    # print(dec)
+                    facebook_sha256[dec] = current_id
+                    facebook_cert_details[current_id] = item
+            
+            missing_serial = []
+            with open("./missing_certs.json", "r") as f:
+                data = json.load(f)
+                
+            now = datetime.now()
+
+            for key, value in data.items():
+                if "not_before" not in value or "not_after" not in value:
+                    continue
+                not_before = datetime.strptime(value["not_before"][:10], "%Y-%m-%d")
+                not_after = datetime.strptime(value["not_after"][:10], "%Y-%m-%d")
+                if now < not_before or now > not_after:
+                    continue
+                missing_serial.append(value["serial"])
+            
+            keys = list(facebook_sha256.keys())
+            
+            for item in missing_serial:
+                dec = str(int(str.lower(item), 16))
+                if dec not in keys:
+                    print("{} not found in Facebook".format(dec))
             
         if args.save:
             if certs is None or len(certs_detail) == 0:
